@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request, jsonify, Response
-from flask_cors import CORS, cross_origin
+from flask import Flask, render_template, request, jsonify, Response, send_file
+from flask_cors import CORS
 from populate_database import populate_database
 from query import query
 import os
@@ -17,11 +17,25 @@ CORS(app, origins=['http://localhost:3000'], support_credentials=True)
 def getFrontend():
     return render_template("index.html")
 
-@app.route('/upload', methods=['POST'])
+@app.route('/document')
+def list_files():
+    files = os.listdir('data/')
+    return jsonify(files)
+
+@app.route('/document/<path:filename>')
+def download_file(filename):
+    filepath = os.path.join('data', filename)
+
+    if os.path.exists(filepath):
+        return send_file(filepath, as_attachment=True)
+    else:
+        return jsonify({"error": f"File '{filename}' not found"}), 404
+
+@app.route('/document/upload', methods=['POST'])
 def upload_file():
     # Check if the post request has the file part
     if 'file' not in request.files:
-        return jsonify({'error': 'No file part'})
+        return jsonify({'error': 'file field is not specified'})
 
     files = request.files.getlist('file')
 
@@ -35,6 +49,18 @@ def upload_file():
             return jsonify({'error': 'Invalid file format'})
     populate_database()
     return jsonify({'message': 'File uploaded successfully'})
+
+@app.route('/document/remove', methods=['POST'])
+def remove_file():
+    filename = request.json.get('filename')
+    filepath = os.path.join('data', filename)
+
+    if os.path.exists(filepath):
+        os.remove(filepath)
+        populate_database(True)
+        return jsonify({"message": f"File '{filename}' removed successfully"})
+    else:
+        return jsonify({"error": f"File '{filename}' not found"}), 404
 
 @app.route('/query', methods=['POST'])
 def query_ollama():

@@ -58,7 +58,7 @@
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 360 100% 50%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
@@ -73,4 +73,13 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+ol {
+  @apply list-decimal;
+}
+
+/* Set default styles for list items */
+li {
+  @apply ml-4; /* Example margin left */
 }

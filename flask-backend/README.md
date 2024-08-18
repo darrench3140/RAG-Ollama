@@ -11,30 +11,23 @@ Before running, ensure that ollama has been installed. If not, please install it
 We will be using `mistral` as the base LLM model and `nomic-embed-text` as the embedding model in this project.
 
 ```shell
+# Pull the required models if you haven't
 ollama pull nomic-embed-text
 ollama pull mistral
+
+# Start Ollama server
+ollama serve
 ```
 
 ### Run Project
 
 ```shell
+conda create -n flask-backend
+conda activate flask-backend
+
 # Install Dependencies
 pip install -r requirements.txt
 
-# Populate the database
-python ./populate_database.py
-
-# Clear the database then Populate it
-python ./populate_database.py --reset
-
-# Run the command with your query
-python ./query_data.py "How much each players get for each round in Monopoly?"
-
-# Run testcases
-pytest ./test_rag.py
+# Start the server
+python app.py
 ```
-
-## Update document
-
-1. Place new pdf files inside the `data` folder
-1. `python ./populate_database.py`

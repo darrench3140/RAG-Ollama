@@ -1,5 +1,4 @@
 import os
-import shutil
 from langchain_community.document_loaders.pdf import PyPDFDirectoryLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
@@ -17,8 +16,11 @@ def populate_database(reset = False):
 
     # Create (or update) the data store.
     documents = load_documents()
+    print('✨ Load doc successfully')
     chunks = split_documents(documents)
+    print('✨ Split doc successfully')
     add_to_chroma(chunks)
+    print('✨ Added to chroma')
 
 def load_documents():
     document_loader = PyPDFDirectoryLoader(DATA_PATH)
@@ -40,10 +42,8 @@ def add_to_chroma(chunks: list[Document]):
     db = Chroma(
         persist_directory=CHROMA_PATH, embedding_function=get_embedding_function()
     )
-
     # Calculate Page IDs.
     chunks_with_ids = calculate_chunk_ids(chunks)
-
     # Add or Update the documents.
     existing_items = db.get(include=[])  # IDs are always included by default
     existing_ids = set(existing_items["ids"])
@@ -94,4 +94,8 @@ def calculate_chunk_ids(chunks):
 
 def clear_database():
     if os.path.exists(CHROMA_PATH):
-        shutil.rmtree(CHROMA_PATH)
+        db = Chroma(
+            persist_directory=CHROMA_PATH, embedding_function=get_embedding_function()
+        )
+        db.delete_collection()
+        print('✨ Cleared Database successfully')

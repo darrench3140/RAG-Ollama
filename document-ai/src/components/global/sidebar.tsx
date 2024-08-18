@@ -4,7 +4,7 @@ import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { IoDocumentAttachOutline, IoHomeOutline } from 'react-icons/io5';
+import { IoDocumentAttachOutline, IoChatbubblesOutline } from 'react-icons/io5';
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>> }) => {
   const pathName = usePathname();
@@ -17,7 +17,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; setSid
   };
 
   const menuItems = [
-    { title: 'Home', icon: <IoHomeOutline className='text-xl min-w-6' />, href: '/home' },
+    { title: 'Chat', icon: <IoChatbubblesOutline className='text-xl min-w-6' />, href: '/chat' },
     { title: 'Documents', icon: <IoDocumentAttachOutline className='text-xl min-w-6' />, href: '/document' },
     // Add more menu items as needed
   ];
