@@ -1,6 +1,8 @@
 from langchain_chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
 from langchain_community.llms.ollama import Ollama
+import pandas as pd
+from pandasai import SmartDataframe
 from get_embedding_function import get_embedding_function
 
 CHROMA_PATH = "chroma"
@@ -37,3 +39,18 @@ def query(query_text: str):
         yield chunk
     sources = [{ doc.metadata.get("id", None): score } for doc, score in results if score < SCORE_THRESHOLD]
     yield '\n\nSources: ' + str(sources)
+
+def query_csv(filename: str, query: str):
+    df = pd.read_csv(f'data/{filename}')
+    llm = model
+    # Initialize SmartDataframe with DataFrame and LLM configuration
+    pandas_ai = SmartDataframe(df, config={ "llm": llm, "open_charts": False })
+    # Chat with the DataFrame using the provided query
+    result = pandas_ai.chat(f'Use only pandas library to give me result. Question: {query}', 'string')
+    print(f'Final result: {result}')
+    return result
+
+def ping_query(query_text: str):
+    prompt = prompt_template.format(context="", question=query_text)
+    result = model.invoke(prompt)
+    print(f"Ping Result: {result}")

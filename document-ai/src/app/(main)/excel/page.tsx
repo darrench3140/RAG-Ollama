@@ -1,15 +1,17 @@
 'use client';
 
+import Document from '@/components/Document';
+import axios from 'axios';
 import { useEffect, useRef, useState } from 'react';
-import { remark } from 'remark';
-import html from 'remark-html';
 
 const NEXT_PUBLIC_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-export default function ChatbotScreen() {
+export default function ExcelAgent() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([{ id: 0, text: 'Hello! How can I assist you today?', isBot: true }]);
+  const [existingFiles, setExistingFiles] = useState<string[]>([]);
+  const [selectedFile, setSelectedFile] = useState('');
+  const [messages, setMessages] = useState<ChatMessage[]>([{ id: 0, text: `Hello! What do you want to know about this file?`, isBot: true }]);
   const [inputValue, setInputValue] = useState('');
   const [autoScroll, setAutoScroll] = useState(true);
 
@@ -28,6 +30,20 @@ export default function ChatbotScreen() {
     }
   };
 
+  const getCurrentFiles = async () => {
+    try {
+      const response = await axios.get(`${NEXT_PUBLIC_BACKEND_URL}/document`);
+      const csvFiles = response.data.filter((file: string) => file.endsWith('.csv'));
+      setExistingFiles(csvFiles);
+    } catch (error: any) {
+      console.log(`Failed to get files from backend. Error: ${error.message}`);
+    }
+  };
+
+  const handleDocumentClick = (filename: string) => {
+    setSelectedFile(filename);
+  };
+
   const handleSendMessage = async () => {
     if (inputValue.trim() === '') return;
     const id = messages.length;
@@ -36,60 +52,25 @@ export default function ChatbotScreen() {
     setInputValue('');
     setAutoScroll(true);
     try {
-      const response = await fetch(`${NEXT_PUBLIC_BACKEND_URL}/query`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: inputValue }),
-      });
-
-      const reader = response.body?.getReader();
-      let output = '';
-      if (response.status !== 200 || !reader) {
+      if (!selectedFile) {
         setTimeout(() => {
           setMessages((prev) => {
             const arr = [...prev];
-            arr[id + 1].text = 'I do not understand that, please ask again.';
+            arr[id + 1].text = 'Please select a csv document to query first.';
             return arr;
           });
         }, 1000);
-        return;
       }
-      while (true) {
-        const { done, value } = await reader.read();
-        const textChunk = new TextDecoder().decode(value);
-        let source: Sources | undefined = undefined;
-
-        if (textChunk.startsWith('\n\nSources: [')) {
-          const sources = JSON.parse(textChunk.trim().slice(9).replaceAll("'", '"')) as SourcesOriginal;
-          if (sources.length !== 0) {
-            source = sources.map((item) => {
-              const key = Object.keys(item)[0];
-              const [filename, page, _] = key.split('/')[1].split(':');
-              return {
-                filename,
-                reference: `${filename} (p.${parseInt(page, 10) + 1})`,
-                confidence: item[key].toString(),
-              };
-            });
-            source = Array.from(source.reduce((map, obj) => map.set(obj.reference, obj), new Map()).values());
-          }
-        } else {
-          output += textChunk;
-        }
-        const processedContent = await remark().use(html).process(output);
-        const contentHtml = processedContent.toString();
-
-        setMessages((prev) => {
-          const arr = [...prev];
-          arr[id + 1].text = contentHtml;
-          arr[id + 1].isHtml = true;
-          arr[id + 1].sources = source ?? arr[id + 1].sources;
-          return arr;
-        });
-        if (done) {
-          return;
-        }
-      }
+      const response = await axios.post(`${NEXT_PUBLIC_BACKEND_URL}/query-csv`, {
+        filename: selectedFile,
+        query: inputValue,
+      });
+      setMessages((prev) => {
+        const arr = [...prev];
+        arr[id + 1].text = response.data?.result ?? 'I do not understand that, please ask again.';
+        arr[id + 1].isHtml = true;
+        return arr;
+      });
     } catch (error: any) {
       console.log('Error', error.message);
     }
@@ -103,14 +84,40 @@ export default function ChatbotScreen() {
     };
   }, [messages]);
 
+  useEffect(() => {
+    setMessages([{ id: 0, text: `Hello! What do you want to know about this file?`, isBot: true }]);
+  }, [selectedFile]);
+
+  useEffect(() => {
+    getCurrentFiles();
+  }, []);
+
   return (
     <div
-      className='min-h-screen flex flex-col justify-between p-4'
+      className='max-h-screen min-h-screen flex flex-col justify-between p-4'
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
           handleSendMessage();
         }
       }}>
+      <h1 className='text-foreground font-semibold text-2xl mb-2'>Select a CSV document</h1>
+      <div className='min-h-40 flex gap-2 flex-wrap'>
+        {existingFiles.map((filename, index) => {
+          return (
+            <Document
+              key={`doc-excel-${index}`}
+              filename={filename}
+              active={selectedFile === filename}
+              handleClick={() => handleDocumentClick(filename)}
+              canEdit={false}
+            />
+          );
+        })}
+      </div>
+      <div className='flex items-center gap-2'>
+        <h2 className='text-foreground font-medium text-xl mb-4'>Ask AI about</h2>
+        <h2 className='text-foreground font-semibold text-xl mb-4'>{!selectedFile ? 'your CSV' : selectedFile}</h2>
+      </div>
       <div ref={scrollRef} className='flex-1 p-4 border rounded-lg overflow-y-auto h-[calc(100vh-90px)] max-h-[calc(100vh-90px)]'>
         {messages.map((msg, index) => (
           <div key={`chat-${index}`}>

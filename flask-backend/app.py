@@ -1,7 +1,11 @@
 from flask import Flask, render_template, request, jsonify, Response, send_file
 from flask_cors import CORS
 from populate_database import populate_database
-from query import query
+from query import query, query_csv, ping_query
+from threading import Thread
+import pandas as pd
+import schedule
+import time
 import os
 import logging
 
@@ -11,7 +15,7 @@ UPLOAD_FOLDER = 'data'
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-CORS(app, origins=['http://localhost:3000'], support_credentials=True)
+CORS(app, origins=['http://localhost:3000', 'https://f990-223-122-199-250.ngrok-free.app'], supports_credentials=True)
 
 @app.route('/')
 def getFrontend():
@@ -43,7 +47,13 @@ def upload_file():
         if file.filename == '':
             return jsonify({'error': 'No selected file'})
         if file:
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], file.filename))
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+            file.save(filepath)
+            if file.filename.endswith('.xlsx'):
+                outputpath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename.replace('.xlsx', '.csv'))
+                excel_data = pd.read_excel(filepath, engine='openpyxl')
+                excel_data.to_csv(outputpath, index=False)
+                os.remove(filepath)
             logging.info('Added file: %s', file.filename)
         else:
             return jsonify({'error': 'Invalid file format'})
@@ -69,9 +79,32 @@ def query_ollama():
     logging.info('Query Ollama: %s', question)
     return Response(query(question))
 
+@app.route('/query-csv', methods=['POST'])
+def query_csv_agent():
+    json_content = request.json
+    filename = json_content.get('filename')
+    query = json_content.get('query')
+    logging.info('Query CSV [%s]: %s', filename, query)
+    try:
+        result = query_csv(filename, query)
+        return jsonify({'result': result})
+    except Exception:
+        print('Something went wrong')
+
+def job():
+    ping_query("Hello")
+
+def start_interval():
+    schedule.every(10).seconds.do(job)
+    while True:
+        schedule.run_pending()
+        time.sleep(2)
+
 def start_app():
     populate_database()
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    app.run(host="0.0.0.0", port=8080)
 
 if __name__ == "__main__":
+    interval_thread = Thread(target=start_interval)
+    interval_thread.start()
     start_app()

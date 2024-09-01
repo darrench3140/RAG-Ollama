@@ -1,5 +1,7 @@
 'use client';
 
+import Document from '@/components/Document';
+import Loader from '@/components/global/Loader';
 import axios from 'axios';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
@@ -13,6 +15,7 @@ const NEXT_PUBLIC_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 const Documents = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [existingFiles, setExistingFiles] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     // Do something with the files
@@ -24,47 +27,62 @@ const Documents = () => {
     });
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, multiple: true, accept: { 'application/pdf': ['.pdf'] } });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    multiple: true,
+    accept: { 'application/pdf': ['.pdf'], 'text/csv': ['.csv'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] },
+  });
 
   const getCurrentFiles = async () => {
-    const response = await axios.get(`${NEXT_PUBLIC_BACKEND_URL}/document`);
-    setExistingFiles(response.data);
-  };
-
-  const removeFile = async (filename: string) => {
     try {
-      await axios.post(`${NEXT_PUBLIC_BACKEND_URL}/document/remove`, { filename });
-      setExistingFiles(existingFiles.filter((file) => file !== filename));
-      getCurrentFiles()
-    } catch (error) {
-      // error handling
+      const response = await axios.get(`${NEXT_PUBLIC_BACKEND_URL}/document`);
+      setExistingFiles(response.data);
+    } catch (error: any) {
+      console.log(`Failed to get files from backend. Error: ${error.message}`);
     }
   };
 
+  const removeFile = async (filename: string) => {
+    setLoading(true);
+    try {
+      await axios.post(`${NEXT_PUBLIC_BACKEND_URL}/document/remove`, { filename });
+      setExistingFiles(existingFiles.filter((file) => file !== filename));
+      getCurrentFiles();
+    } catch (error) {
+      // error handling
+    }
+    setLoading(false);
+  };
+
   const uploadFile = async () => {
+    setLoading(true);
     const formData = new FormData();
     files.forEach((file) => {
       formData.append('file', file);
     });
-
-    await axios.post(`${NEXT_PUBLIC_BACKEND_URL}/document/upload`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      transformRequest: () => {
-        return formData;
-      },
-    });
-
-    setExistingFiles((prev) => {
-      const arr = [...prev];
-      files.forEach((file) => {
-        arr.push(file.name);
+    try {
+      await axios.post(`${NEXT_PUBLIC_BACKEND_URL}/document/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        transformRequest: () => {
+          return formData;
+        },
       });
-      return arr;
-    });
-    getCurrentFiles()
-    setFiles([])
+
+      setExistingFiles((prev) => {
+        const arr = [...prev];
+        files.forEach((file) => {
+          arr.push(file.name);
+        });
+        return arr;
+      });
+      getCurrentFiles();
+      setFiles([]);
+    } catch (error: any) {
+      console.log(`Failed to uplaod file ${error.message}`);
+    }
+    setLoading(false);
   };
 
   const cancelUploadFile = async (filename: string) => {
@@ -77,22 +95,11 @@ const Documents = () => {
 
   return (
     <div className='p-4'>
-      <h1 className='text-foreground font-semibold text-2xl mb-2'>Documents</h1>
+      <Loader loading={loading} />
+      <h1 className='text-foreground font-semibold text-2xl mb-2'>All Documents</h1>
       <div className='min-h-40'>
         {existingFiles.map((filename, index) => {
-          return (
-            <div key={`existing-file-${index}`} className='border-2 border-border rounded-lg mb-2 h-10 px-4'>
-              <div className='flex justify-between h-full items-center'>
-                <p className='text-foreground'>{filename}</p>
-                <div className='flex gap-4'>
-                  <a href={`${NEXT_PUBLIC_BACKEND_URL}/document/${filename}`} download={true}>
-                    <FaDownload className='text-primary w-5 h-5 cursor-pointer' />
-                  </a>
-                  <MdDelete className='text-destructive w-5 h-5 cursor-pointer' onClick={() => removeFile(filename)} />
-                </div>
-              </div>
-            </div>
-          );
+          return <Document filename={filename} key={`doc-${index}`} removeFile={removeFile} />;
         })}
       </div>
       <h2 className='text-foreground font-semibold text-xl mb-4'>Insert new Documents</h2>
