@@ -15,7 +15,7 @@ UPLOAD_FOLDER = 'data'
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-CORS(app, origins=['http://localhost:3000', 'https://f990-223-122-199-250.ngrok-free.app'], supports_credentials=True)
+CORS(app, origins=['http://localhost:3000', 'https://c0ac-183-179-187-62.ngrok-free.app'], supports_credentials=True)
 
 @app.route('/')
 def getFrontend():

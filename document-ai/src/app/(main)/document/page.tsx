@@ -2,15 +2,12 @@
 
 import Document from '@/components/Document';
 import Loader from '@/components/global/Loader';
-import axios from 'axios';
+import axios from '@/lib/axios';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { FaImages } from 'react-icons/fa';
-import { FaDownload } from 'react-icons/fa6';
-import { MdDelete } from 'react-icons/md';
 import { RxCross2 } from 'react-icons/rx';
 
-const NEXT_PUBLIC_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 const Documents = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -35,8 +32,8 @@ const Documents = () => {
 
   const getCurrentFiles = async () => {
     try {
-      const response = await axios.get(`${NEXT_PUBLIC_BACKEND_URL}/document`);
-      setExistingFiles(response.data);
+      const response = await axios.get(`/document`);
+      setExistingFiles(response.data ?? []);
     } catch (error: any) {
       console.log(`Failed to get files from backend. Error: ${error.message}`);
     }
@@ -45,7 +42,7 @@ const Documents = () => {
   const removeFile = async (filename: string) => {
     setLoading(true);
     try {
-      await axios.post(`${NEXT_PUBLIC_BACKEND_URL}/document/remove`, { filename });
+      await axios.post(`/document/remove`, { filename });
       setExistingFiles(existingFiles.filter((file) => file !== filename));
       getCurrentFiles();
     } catch (error) {
@@ -61,7 +58,7 @@ const Documents = () => {
       formData.append('file', file);
     });
     try {
-      await axios.post(`${NEXT_PUBLIC_BACKEND_URL}/document/upload`, formData, {
+      await axios.post(`/document/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -98,7 +95,7 @@ const Documents = () => {
       <Loader loading={loading} />
       <h1 className='text-foreground font-semibold text-2xl mb-2'>All Documents</h1>
       <div className='min-h-40'>
-        {existingFiles.map((filename, index) => {
+        {existingFiles?.map((filename, index) => {
           return <Document filename={filename} key={`doc-${index}`} removeFile={removeFile} />;
         })}
       </div>

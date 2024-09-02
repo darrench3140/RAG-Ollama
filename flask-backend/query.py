@@ -6,7 +6,7 @@ from pandasai import SmartDataframe
 from get_embedding_function import get_embedding_function
 
 CHROMA_PATH = "chroma"
-SCORE_THRESHOLD = 300
+SCORE_THRESHOLD = 450
 
 PROMPT_TEMPLATE = """
 Additional context:
@@ -17,6 +17,8 @@ Additional context:
 
 Answer this question: {question}
 """
+
+EXTRA_CSV_PROMPT = "Answer as short as possible. You have a pandas dataframe variable df, answer as simple as possible for this user query:"
 
 prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
 model = Ollama(model="mistral")
@@ -46,7 +48,7 @@ def query_csv(filename: str, query: str):
     # Initialize SmartDataframe with DataFrame and LLM configuration
     pandas_ai = SmartDataframe(df, config={ "llm": llm, "open_charts": False })
     # Chat with the DataFrame using the provided query
-    result = pandas_ai.chat(f'Use only pandas library to give me result. Question: {query}', 'string')
+    result = pandas_ai.chat(f'{EXTRA_CSV_PROMPT}: {query}', 'string')
     print(f'Final result: {result}')
     return result
 

@@ -1,7 +1,7 @@
 'use client';
 
 import Document from '@/components/Document';
-import axios from 'axios';
+import axios from '@/lib/axios';
 import { useEffect, useRef, useState } from 'react';
 
 const NEXT_PUBLIC_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
@@ -32,7 +32,7 @@ export default function ExcelAgent() {
 
   const getCurrentFiles = async () => {
     try {
-      const response = await axios.get(`${NEXT_PUBLIC_BACKEND_URL}/document`);
+      const response = await axios.get(`/document`);
       const csvFiles = response.data.filter((file: string) => file.endsWith('.csv'));
       setExistingFiles(csvFiles);
     } catch (error: any) {
@@ -61,7 +61,7 @@ export default function ExcelAgent() {
           });
         }, 1000);
       }
-      const response = await axios.post(`${NEXT_PUBLIC_BACKEND_URL}/query-csv`, {
+      const response = await axios.post(`/query-csv`, {
         filename: selectedFile,
         query: inputValue,
       });
@@ -102,7 +102,7 @@ export default function ExcelAgent() {
       }}>
       <h1 className='text-foreground font-semibold text-2xl mb-2'>Select a CSV document</h1>
       <div className='min-h-40 flex gap-2 flex-wrap'>
-        {existingFiles.map((filename, index) => {
+        {existingFiles?.map((filename, index) => {
           return (
             <Document
               key={`doc-excel-${index}`}
