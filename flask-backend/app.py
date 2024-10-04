@@ -1,30 +1,37 @@
-from flask import Flask, render_template, request, jsonify, Response, send_file
-from flask_cors import CORS
-from populate_database import populate_database
-from query import query, query_csv, ping_query
-from threading import Thread
-import pandas as pd
-import schedule
-import time
-import os
 import logging
+import os
+import time
+import schedule
+import pandas as pd
+from threading import Thread
+from src.query import query, query_csv, ping_query
+from src.populate_database import populate_database
+from flask_cors import CORS
+from flask import Flask, render_template, request, jsonify, Response, send_file
+from dotenv import load_dotenv
+load_dotenv()
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-UPLOAD_FOLDER = 'data'
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
+UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER")
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-CORS(app, origins=['http://localhost:3000', 'https://c0ac-183-179-187-62.ngrok-free.app'], supports_credentials=True)
+CORS(app, origins=['http://localhost:3000',
+     'https://d2ce-223-122-199-250.ngrok-free.app'], supports_credentials=True)
+
 
 @app.route('/')
 def getFrontend():
     return render_template("index.html")
 
+
 @app.route('/document')
 def list_files():
-    files = os.listdir('data/')
+    files = os.listdir(UPLOAD_FOLDER)
     return jsonify(files)
+
 
 @app.route('/document/<path:filename>')
 def download_file(filename):
@@ -34,6 +41,7 @@ def download_file(filename):
         return send_file(filepath, as_attachment=True)
     else:
         return jsonify({"error": f"File '{filename}' not found"}), 404
+
 
 @app.route('/document/upload', methods=['POST'])
 def upload_file():
@@ -47,10 +55,11 @@ def upload_file():
         if file.filename == '':
             return jsonify({'error': 'No selected file'})
         if file:
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+            filepath = os.path.join(UPLOAD_FOLDER, file.filename)
             file.save(filepath)
             if file.filename.endswith('.xlsx'):
-                outputpath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename.replace('.xlsx', '.csv'))
+                outputpath = os.path.join(
+                    UPLOAD_FOLDER, file.filename.replace('.xlsx', '.csv'))
                 excel_data = pd.read_excel(filepath, engine='openpyxl')
                 excel_data.to_csv(outputpath, index=False)
                 os.remove(filepath)
@@ -59,6 +68,7 @@ def upload_file():
             return jsonify({'error': 'Invalid file format'})
     populate_database()
     return jsonify({'message': 'File uploaded successfully'})
+
 
 @app.route('/document/remove', methods=['POST'])
 def remove_file():
@@ -72,12 +82,14 @@ def remove_file():
     else:
         return jsonify({"error": f"File '{filename}' not found"}), 404
 
+
 @app.route('/query', methods=['POST'])
 def query_ollama():
     json_content = request.json
     question = json_content.get('query')
     logging.info('Query Ollama: %s', question)
     return Response(query(question))
+
 
 @app.route('/query-csv', methods=['POST'])
 def query_csv_agent():
@@ -91,8 +103,10 @@ def query_csv_agent():
     except Exception:
         print('Something went wrong')
 
+
 def job():
     ping_query("Hello")
+
 
 def start_interval():
     schedule.every(10).seconds.do(job)
@@ -100,9 +114,11 @@ def start_interval():
         schedule.run_pending()
         time.sleep(2)
 
+
 def start_app():
     populate_database()
     app.run(host="0.0.0.0", port=8080)
+
 
 if __name__ == "__main__":
     interval_thread = Thread(target=start_interval)

@@ -11,3 +11,4 @@ pandasai
 schedule
 langchain_experimental
 openpyxl
+python-dotenv

@@ -6,7 +6,7 @@ This project uses technology like Langchain, Chroma DB, Ollama embeddings, as we
 
 ### Ollama
 
-Before running, ensure that ollama has been installed. If not, please install it [here](https://ollama.com/download). After that you **must** run `ollama serve` to start Ollama server on your machine.
+Before running, ensure that ollama has been installed. If not, please install it [here](https://ollama.com/download).
 
 We will be using `mistral` as the base LLM model and `nomic-embed-text` as the embedding model in this project.
 

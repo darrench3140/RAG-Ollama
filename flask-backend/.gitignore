@@ -6,3 +6,6 @@ venv
 cache/
 exports/
 pandasai.log
+data/
+__pycache__
+.pytest_cache

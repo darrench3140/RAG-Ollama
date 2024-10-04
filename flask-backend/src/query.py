@@ -3,7 +3,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_community.llms.ollama import Ollama
 import pandas as pd
 from pandasai import SmartDataframe
-from get_embedding_function import get_embedding_function
+from .get_embedding_function import get_embedding_function
 
 CHROMA_PATH = "chroma"
 SCORE_THRESHOLD = 450
@@ -18,7 +18,7 @@ Additional context:
 Answer this question: {question}
 """
 
-EXTRA_CSV_PROMPT = "Answer as short as possible. You have a pandas dataframe variable df, answer as simple as possible for this user query:"
+EXTRA_CSV_PROMPT = "Answer as short as possible. You have a pandas dataframe variable df, answer as simple as possible for this user query"
 
 prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
 model = Ollama(model="mistral")

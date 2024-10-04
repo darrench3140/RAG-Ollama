@@ -1,4 +1,4 @@
-from query_data import query_rag
+from src.query import query
 from langchain_community.llms.ollama import Ollama
 
 EVAL_PROMPT = """
@@ -9,22 +9,14 @@ Actual Response: {actual_response}
 """
 
 
-def test_monopoly_rules():
+def test_greeting():
     assert query_and_validate(
-        question="How much total money does a player start with in Monopoly? (Answer with the number only)",
-        expected_response="$1500",
+        question="Hi",
+        expected_response="Hello! How can I help you today?",
     )
-
-
-def test_ticket_to_ride_rules():
-    assert query_and_validate(
-        question="How many points does the longest continuous train get in Ticket to Ride? (Answer with the number only)",
-        expected_response="10 points",
-    )
-
 
 def query_and_validate(question: str, expected_response: str):
-    response_text = query_rag(question)
+    response_text = query(question)
     prompt = EVAL_PROMPT.format(
         expected_response=expected_response, actual_response=response_text
     )
