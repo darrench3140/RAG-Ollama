@@ -18,7 +18,7 @@ Additional context:
 Answer this question: {question}
 """
 
-EXTRA_CSV_PROMPT = "Answer as short as possible. You have a pandas dataframe variable df, answer as simple as possible for this user query"
+EXTRA_CSV_PROMPT = "Answer with only the python code, provide 0 extra context. Given that you have a pandas dataframe, give me 1 shortest python code to handle the following query"
 
 prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
 model = Ollama(model="mistral")
