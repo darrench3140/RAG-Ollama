@@ -7,8 +7,9 @@ langchain_chroma
 flask
 flask-cors
 pandas
-pandasai
+pandasai==2.4.0
 schedule
 langchain_experimental
 openpyxl
 python-dotenv
+seaborn
